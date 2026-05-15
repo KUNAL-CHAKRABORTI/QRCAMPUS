@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Dashboard</title>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Inter", "Segoe UI", sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 35%),
+                linear-gradient(135deg, #f8fbff, #eef4ff);
+            color: #172033;
+        }
+
+        .layout {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 265px;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #0f172a, #1d4ed8);
+            color: white;
+            padding: 26px 18px;
+            position: fixed;
+            box-shadow: 12px 0 35px rgba(15, 23, 42, 0.2);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 35px;
+            letter-spacing: 0.3px;
+        }
+
+        .sidebar button {
+            width: 100%;
+            padding: 15px 16px;
+            margin: 11px 0;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.3s;
+            backdrop-filter: blur(12px);
+        }
+
+        .sidebar button:hover {
+            background: white;
+            color: #1d4ed8;
+            transform: translateX(8px);
+            box-shadow: 0 12px 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .content {
+            margin-left: 265px;
+            width: calc(100% - 265px);
+        }
+
+        .topbar {
+            height: 78px;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(18px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 34px;
+            box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .topbar h3 {
+            font-size: 21px;
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .dark-btn {
+            border: none;
+            background: linear-gradient(135deg, #eef2ff, #dbeafe);
+            color: #2563eb;
+            padding: 11px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 18px;
+            box-shadow: 0 8px 22px rgba(37, 99, 235, 0.15);
+        }
+
+        .profile {
+            width: 47px;
+            height: 47px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35);
+        }
+
+        .dropdown {
+            position: absolute;
+            top: 82px;
+            right: 32px;
+            width: 245px;
+            background: white;
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: 0 24px 55px rgba(15, 23, 42, 0.2);
+            display: none;
+            border: 1px solid #eef2ff;
+        }
+
+        .dropdown p {
+            font-size: 14px;
+            margin-bottom: 9px;
+            color: #475569;
+        }
+
+        .dropdown button {
+            width: 100%;
+            margin-top: 12px;
+            border: none;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 11px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .main {
+            padding: 38px;
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.94));
+            border-radius: 34px;
+            padding: 34px;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 30px;
+            box-shadow: 0 28px 70px rgba(30, 64, 175, 0.14);
+            margin-bottom: 32px;
+            border: 1px solid rgba(219, 234, 254, 0.9);
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            border-radius: 50%;
+            top: -120px;
+            right: -90px;
+            opacity: 0.24;
+        }
+
+        .hero h1 {
+            position: relative;
+            font-size: 38px;
+            margin-bottom: 14px;
+            color: #0f172a;
+            font-weight: 950;
+            letter-spacing: -0.8px;
+        }
+
+        .hero p {
+            position: relative;
+            color: #64748b;
+            line-height: 1.8;
+            max-width: 660px;
+            font-size: 16px;
+        }
+
+        .stats {
+            position: relative;
+            display: flex;
+            gap: 18px;
+            margin-top: 28px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.85);
+            padding: 18px 22px;
+            border-radius: 22px;
+            min-width: 165px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e0ecff;
+        }
+
+        .stat h2 {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            -webkit-background-clip: text;
+            color: transparent;
+            font-size: 31px;
+            font-weight: 950;
+        }
+
+        .stat span {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .scanner-card {
+            position: relative;
+            background: rgba(255, 255, 255, 0.94);
+            border-radius: 28px;
+            padding: 26px;
+            text-align: center;
+            box-shadow: 0 22px 50px rgba(15, 23, 42, 0.12);
+            border: 1px solid #dbeafe;
+        }
+
+        .scanner-card h2 {
+            font-size: 25px;
+            color: #0f172a;
+            font-weight: 950;
+        }
+
+        #reader {
+            width: 100%;
+            max-width: 315px;
+            margin: 20px auto;
+            overflow: hidden;
+            border-radius: 24px;
+            border: 4px solid #bfdbfe;
+            box-shadow: 0 16px 35px rgba(37, 99, 235, 0.18);
+        }
+
+        #status {
+            margin-top: 15px;
+            padding: 14px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white;
+            border-radius: 16px;
+            font-weight: 850;
+            box-shadow: 0 12px 25px rgba(37, 99, 235, 0.25);
+        }
+
+        .result-card {
+            margin-top: 18px;
+            background: linear-gradient(135deg, #f8fafc, #eef6ff);
+            border-radius: 20px;
+            padding: 19px;
+            text-align: left;
+            display: none;
+            border: 1px solid #dbeafe;
+        }
+
+        .attendance-section {
+            background: rgba(255, 255, 255, 0.94);
+            border-radius: 30px;
+            padding: 28px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.09);
+            border: 1px solid #e0ecff;
+        }
+
+        .attendance-section h2 {
+            margin-bottom: 20px;
+            font-size: 26px;
+            color: #0f172a;
+            font-weight: 950;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 18px;
+        }
+
+        th,
+        td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        th {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            color: #1e40af;
+            font-weight: 900;
+        }
+
+        tr:hover td {
+            background: #f8fbff;
+        }
+
+        .present {
+            color: #16a34a;
+            font-weight: 900;
+        }
+
+        body.dark {
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.24), transparent 35%),
+                linear-gradient(135deg, #020617, #0f172a);
+            color: white;
+        }
+
+        body.dark .topbar,
+        body.dark .scanner-card,
+        body.dark .attendance-section,
+        body.dark .stat,
+        body.dark .dropdown {
+            background: rgba(30, 41, 59, 0.92);
+            color: white;
+            border-color: rgba(148, 163, 184, 0.18);
+        }
+
+        body.dark .hero {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.96));
+            border-color: rgba(148, 163, 184, 0.18);
+        }
+
+        body.dark .topbar h3,
+        body.dark .hero h1,
+        body.dark .scanner-card h2,
+        body.dark .attendance-section h2 {
+            color: white;
+        }
+
+        body.dark p,
+        body.dark .dropdown p,
+        body.dark .stat span {
+            color: #cbd5e1;
+        }
+
+        body.dark th {
+            background: #334155;
+            color: white;
+        }
+
+        body.dark td {
+            border-color: #334155;
+        }
+
+        body.dark tr:hover td {
+            background: #263449;
+        }
+
+        body.dark .result-card {
+            background: #334155;
+            color: white;
+            border-color: #475569;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+            }
+
+            .layout {
+                flex-direction: column;
+            }
+
+            .content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .main {
+                padding: 22px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <aside class="sidebar">
+            <div class="logo">🎓 Student Panel</div>
+            <button onclick="showScanner()">📷 Scan QR</button>
+            <button onclick="showAttendance()">📊 Attendance History</button>
+            <button onclick="logout()">🚪 Logout</button>
+        </aside>
+
+        <main class="content">
+
+            <div class="topbar">
+                <h3>QR Attendance System</h3>
+
+                <div class="top-actions">
+                    <button class="dark-btn" onclick="toggleDark()">🌙</button>
+                    <div class="profile" id="profileInitial" onclick="toggleProfile()">S</div>
+                </div>
+
+                <div class="dropdown" id="profileDropdown">
+                    <p><b>Name:</b> <span id="profileName"></span></p>
+                    <p><b>Email:</b> <span id="profileEmail"></span></p>
+                    <p><b>Role:</b> Student</p>
+                    <button onclick="logout()">Logout</button>
+                </div>
+            </div>
+
+            <section class="main">
+
+                <div class="hero">
+                    <div>
+                        <h1>Welcome, <span id="studentName">Student</span> 👋</h1>
+                        <p>
+                            Scan your teacher's QR code to mark attendance. QR expiry, distance checking,
+                            and attendance history are included for a more professional system.
+                        </p>
+
+                        <div class="stats">
+                            <div class="stat">
+                                <h2 id="totalAttendance">0</h2>
+                                <span>Total Attendance</span>
+                            </div>
+                            <div class="stat">
+                                <h2>QR</h2>
+                                <span>Smart Scanner</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scanner-card" id="scannerBox">
+                        <h2>Scan QR</h2>
+                        <div id="reader"></div>
+                        <p id="status">Scan QR to mark attendance</p>
+
+                        <div id="result" class="result-card"></div>
+                    </div>
+                </div>
+
+                <div class="attendance-section" id="attendanceBox">
+                    <h2>Attendance History</h2>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                                <th>Distance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTable"></tbody>
+                    </table>
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script type="module">
+
+        const user = {
+            name: localStorage.getItem("userName") || "Student",
+            email: localStorage.getItem("userEmail") || "student@gmail.com",
+            role: localStorage.getItem("userRole")
+        };
+
+        if (user.role !== "student") {
+            window.location.href = "index.html";
+        }
+
+        document.getElementById("studentName").innerText = user.name || "Student";
+        document.getElementById("profileName").innerText = user.name || "Student";
+        document.getElementById("profileEmail").innerText = user.email || "student@gmail.com";
+        document.getElementById("profileInitial").innerText =
+            (user.name || user.email || "S").charAt(0).toUpperCase();
+
+        let html5QrCode;
+        let scanning = false;
+
+        function startScanner() {
+            if (scanning) return;
+
+            html5QrCode = new Html5Qrcode("reader");
+
+            Html5Qrcode.getCameras()
+                .then(devices => {
+                    if (!devices || devices.length === 0) {
+                        document.getElementById("status").innerText = "No camera found ❌";
+                        return;
+                    }
+
+                    let backCamera = devices.find(d =>
+                        d.label.toLowerCase().includes("back") ||
+                        d.label.toLowerCase().includes("rear") ||
+                        d.label.toLowerCase().includes("environment")
+                    );
+
+                    if (!backCamera) {
+                        backCamera = devices[devices.length - 1];
+                    }
+
+                    html5QrCode.start(
+                        backCamera.id,
+                        {
+                            fps: 10,
+                            qrbox: { width: 240, height: 240 }
+                        },
+                        onScanSuccess
+                    );
+
+                    scanning = true;
+                })
+                .catch(() => {
+                    document.getElementById("status").innerText = "Camera permission required ❌";
+                });
+        }
+
+        async function onScanSuccess(decodedText) {
+            if (!scanning) return;
+            scanning = false;
+
+            try {
+                document.getElementById("status").innerText = "Processing QR...";
+
+                await html5QrCode.stop();
+                await html5QrCode.clear();
+
+                const data = JSON.parse(decodedText);
+
+                if (data.expiry && Date.now() > data.expiry) {
+                    document.getElementById("status").innerText = "❌ QR Expired";
+                    restartScanner();
+                    return;
+                }
+
+                let distanceText = "Not checked";
+                let distance = 0;
+
+                if (data.teacherLat && data.teacherLon) {
+                    const position = await getLocation();
+
+                    distance = getDistance(
+                        position.coords.latitude,
+                        position.coords.longitude,
+                        data.teacherLat,
+                        data.teacherLon
+                    );
+
+                    distanceText = Math.round(distance) + " meter";
+
+                    if (distance > 100) {
+                        document.getElementById("status").innerText =
+                            `❌ Too far from teacher (${Math.round(distance)}m)`;
+                        restartScanner();
+                        return;
+                    }
+                }
+
+                const attendance = {
+                    name: user.name,
+                    email: user.email,
+                    subject: data.subject || "Unknown Subject",
+                    time: new Date().toLocaleString(),
+                    status: "Present",
+                    distance: distanceText
+                };
+
+                saveAttendance(attendance);
+
+                document.getElementById("status").innerText = "✅ Attendance Marked Successfully";
+
+                const result = document.getElementById("result");
+                result.style.display = "block";
+                result.innerHTML = `
+        <h3>${attendance.subject}</h3>
+        <p><b>Name:</b> ${attendance.name}</p>
+        <p><b>Time:</b> ${attendance.time}</p>
+        <p><b>Distance:</b> ${attendance.distance}</p>
+        <p class="present">✔ Present</p>
+      `;
+
+                loadAttendance();
+
+            } catch (error) {
+                document.getElementById("status").innerText = "❌ Invalid QR Code";
+                restartScanner();
+            }
+        }
+
+        function restartScanner() {
+            setTimeout(() => {
+                scanning = false;
+                startScanner();
+            }, 2000);
+        }
+
+        function getLocation() {
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const toRad = x => x * Math.PI / 180;
+
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+
+            const a =
+                Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) *
+                Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) ** 2;
+
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        }
+
+        async function saveAttendance(record) {
+
+            const attendanceRef = ref(db, "attendanceRecords");
+
+            const newAttendance = push(attendanceRef);
+
+            await set(newAttendance, record);
+        }
+
+        function loadAttendance() {
+            const attendance = JSON.parse(localStorage.getItem("attendanceRecords")) || [];
+            const studentRecords = attendance.filter(item => item.email === user.email);
+
+            document.getElementById("totalAttendance").innerText = studentRecords.length;
+
+            const table = document.getElementById("attendanceTable");
+
+            if (studentRecords.length === 0) {
+                table.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align:center;">No attendance marked yet</td>
+        </tr>
+      `;
+                return;
+            }
+
+            table.innerHTML = studentRecords.reverse().map(item => `
+      <tr>
+        <td>${item.subject}</td>
+        <td>${item.time}</td>
+        <td class="present">${item.status}</td>
+        <td>${item.distance}</td>
+      </tr>
+    `).join("");
+        }
+
+        function showScanner() {
+            document.getElementById("scannerBox").scrollIntoView({ behavior: "smooth" });
+        }
+
+        function showAttendance() {
+            document.getElementById("attendanceBox").scrollIntoView({ behavior: "smooth" });
+        }
+
+        function toggleDark() {
+            document.body.classList.toggle("dark");
+        }
+
+        function toggleProfile() {
+            const dropdown = document.getElementById("profileDropdown");
+            dropdown.style.display =
+                dropdown.style.display === "block" ? "none" : "block";
+        }
+
+        function logout() {
+            window.location.href = "index.html";
+        }
+
+        loadAttendance();
+        startScanner();
+    </script>
+
+</body>
+
+</html>

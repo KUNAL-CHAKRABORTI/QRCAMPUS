@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Code Generator Login</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Poppins", sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, #dbeafe, transparent 35%),
+                radial-gradient(circle at bottom right, #ede9fe, transparent 35%),
+                linear-gradient(135deg, #f0f7ff, #f8f5ff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            min-height: 620px;
+            background: rgba(248, 250, 255, 0.82);
+            border-radius: 32px;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            box-shadow: 0 30px 80px rgba(59, 130, 246, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(18px);
+        }
+
+        .left {
+            position: relative;
+            padding: 45px;
+            color: white;
+            background:
+                linear-gradient(135deg, rgba(37, 99, 235, 0.78), rgba(124, 58, 237, 0.62)),
+                url("https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80");
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2563eb;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 26px;
+            font-weight: 800;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .left h1 {
+            font-size: 42px;
+            line-height: 1.2;
+            margin-bottom: 18px;
+        }
+
+        .left p {
+            max-width: 480px;
+            font-size: 16px;
+            line-height: 1.7;
+            opacity: 0.96;
+        }
+
+        .right {
+            padding: 50px 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: linear-gradient(160deg, #f8fbff, #f1f5ff, #faf5ff);
+        }
+
+        .right h2 {
+            font-size: 32px;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .right .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #d8e3f8;
+            border-radius: 16px;
+            outline: none;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.72);
+            color: #1e293b;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 1px 2px rgba(148, 163, 184, 0.12);
+        }
+
+        .input-group input:hover,
+        .input-group select:hover {
+            transform: translateY(-1px);
+            border-color: #93c5fd;
+        }
+
+        .input-group input::placeholder {
+            color: #94a3b8;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            border-color: #6366f1;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.13);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #2563eb, #6366f1, #8b5cf6);
+            background-size: 200% 200%;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.4s ease;
+            box-shadow: 0 14px 28px rgba(99, 102, 241, 0.28);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            background-position: right center;
+            box-shadow: 0 18px 35px rgba(99, 102, 241, 0.38);
+        }
+
+        .switch-text {
+            margin-top: 22px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .switch-text span {
+            color: #4f46e5;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .switch-text span:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #16a34a;
+            font-weight: 600;
+        }
+
+        @media (max-width: 850px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .left {
+                min-height: 330px;
+                padding: 35px;
+            }
+
+            .left h1 {
+                font-size: 32px;
+            }
+
+            .right {
+                padding: 35px 25px;
+            }
+        }
+
+        .top-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 10px 18px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .hero-content {
+            margin-top: 40px;
+        }
+
+        .hero-content h1 {
+            font-size: 48px;
+            line-height: 1.15;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+
+        .hero-content p {
+            max-width: 500px;
+            font-size: 16px;
+            line-height: 1.8;
+            opacity: 0.96;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 28px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            min-width: 120px;
+            padding: 18px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card h3 {
+            font-size: 26px;
+            margin-bottom: 5px;
+        }
+
+        .stat-card span {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .features {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 28px;
+        }
+
+        .features span {
+            background: rgba(255, 255, 255, 0.18);
+            padding: 12px 18px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            font-size: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            transition: 0.3s;
+        }
+
+        .features span:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        @media (max-width: 850px) {
+
+            .hero-content h1 {
+                font-size: 36px;
+            }
+
+            .stats {
+                gap: 10px;
+            }
+
+            .stat-card {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                align-items: flex-start;
+                padding: 12px;
+            }
+
+            .container {
+                border-radius: 22px;
+                min-height: auto;
+            }
+
+            .left {
+                padding: 28px 22px;
+                min-height: auto;
+            }
+
+            .badge {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+
+            .hero-content h1 {
+                font-size: 30px;
+            }
+
+            .hero-content p {
+                font-size: 14px;
+            }
+
+            .stat-card {
+                min-width: 100%;
+                padding: 14px;
+            }
+
+            .features span {
+                font-size: 12px;
+                padding: 9px 12px;
+            }
+
+            .right {
+                padding: 30px 20px;
+            }
+
+            .right h2 {
+                font-size: 27px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .input-group {
+                margin-bottom: 14px;
+            }
+
+            .input-group input,
+            .input-group select {
+                padding: 13px 14px;
+                font-size: 14px;
+                border-radius: 13px;
+            }
+
+            .btn {
+                padding: 14px;
+                border-radius: 14px;
+            }
+
+            .switch-text {
+                font-size: 13px;
+                margin-top: 18px;
+            }
+        }
+
+        .left,
+        .right,
+        .stat-card,
+        .features span,
+        .btn,
+        .input-group input,
+        .input-group select {
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            animation: fadeIn 1s ease;
+        }
+
+        .left {
+            animation: slideLeft 0.9s ease;
+        }
+
+        .right {
+            animation: slideRight 0.9s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- LEFT SIDE -->
+        <div class="left">
+
+            <div class="top-section">
+                <div class="logo">⚡</div>
+
+                <div class="badge">
+                    Smart Campus System
+                </div>
+            </div>
+
+            <div class="hero-content">
+
+                <h1>
+                    Modern QR Attendance <br>
+                    System for Colleges
+                </h1>
+
+                <p>
+                    Simplify attendance tracking, student verification, and classroom management
+                    with a secure and beautifully designed QR-based campus platform.
+                </p>
+
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>99%</h3>
+                        <span>Fast Scanning</span>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3>24/7</h3>
+                        <span>Access System</span>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3>Secure</h3>
+                        <span>Cloud Records</span>
+                    </div>
+                </div>
+
+                <div class="features">
+                    <span>📷 QR Attendance</span>
+                    <span>🎓 Student Portal</span>
+                    <span>👨‍🏫 Teacher Dashboard</span>
+                    <span>🔐 Secure Login</span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <div class="right">
+
+            <!-- LOGIN FORM -->
+            <form id="loginForm">
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Login to continue your QR journey</p>
+
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Role</label>
+                    <select id="loginRole" required>
+                        <option value="">Select Role</option>
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                    </select>
+                </div>
+
+                <button class="btn" type="submit">Login</button>
+
+                <p class="switch-text">
+                    Don't have an account?
+                    <span onclick="showSignup()">Create Account</span>
+                </p>
+            </form>
+
+            <!-- SIGNUP FORM -->
+            <form id="signupForm" class="hidden">
+                <h2>Create Account</h2>
+                <p class="subtitle">Signup to start using QR Code Generator</p>
+
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="signupName" placeholder="Enter your full name" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="signupEmail" placeholder="Enter your email" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="signupPassword" placeholder="Create password" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Role</label>
+                    <select id="signupRole" required>
+                        <option value="">Select Role</option>
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                    </select>
+                </div>
+
+                <button class="btn" type="submit">Sign Up</button>
+
+                <p class="switch-text">
+                    Already have an account?
+                    <span onclick="showLogin()">Login</span>
+                </p>
+            </form>
+
+            <p id="status"></p>
+
+        </div>
+    </div>
+
+    <script type="module">
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword
+        } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+
+        import {
+            getDatabase,
+            ref,
+            push,
+            set,
+            get
+        } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh6L6YkSb4M10nw51g1yo7XE_4corC6tQ",
+            authDomain: "qrcampus-614c2.firebaseapp.com",
+            databaseURL: "https://qrcampus-614c2-default-rtdb.firebaseio.com/",
+            projectId: "qrcampus-614c2",
+            storageBucket: "qrcampus-614c2.firebasestorage.app",
+            messagingSenderId: "776699116949",
+            appId: "1:776699116949:web:0475c465df0d830fbb4a9c",
+            measurementId: "G-ZYLMLEWH4L"
+        };
+
+        
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        const loginForm = document.getElementById("loginForm");
+        const signupForm = document.getElementById("signupForm");
+        const statusText = document.getElementById("status");
+
+        function showSignup() {
+            loginForm.classList.add("hidden");
+            signupForm.classList.remove("hidden");
+            statusText.innerText = "";
+        }
+
+        function showLogin() {
+            signupForm.classList.add("hidden");
+            loginForm.classList.remove("hidden");
+            statusText.innerText = "";
+        }
+
+        window.showSignup = showSignup;
+        window.showLogin = showLogin;
+
+        /* SIGNUP */
+
+        signupForm.addEventListener("submit", async function (e) {
+
+            e.preventDefault();
+
+            const email = document.getElementById("signupEmail").value;
+            const password = document.getElementById("signupPassword").value;
+            const role = document.getElementById("signupRole").value;
+
+            try {
+
+                await createUserWithEmailAndPassword(auth, email, password);
+
+                localStorage.setItem("userRole", role);
+
+                statusText.style.color = "green";
+                statusText.innerText = "Account created successfully!";
+
+                signupForm.reset();
+
+                setTimeout(() => {
+                    showLogin();
+                }, 1000);
+
+            } catch (error) {
+
+                statusText.style.color = "red";
+                statusText.innerText = error.message;
+            }
+
+        });
+
+        /* LOGIN */
+
+        loginForm.addEventListener("submit", async function (e) {
+
+            e.preventDefault();
+
+            const email = document.getElementById("loginEmail").value;
+            const password = document.getElementById("loginPassword").value;
+            const role = document.getElementById("loginRole").value;
+
+            try {
+
+                await signInWithEmailAndPassword(auth, email, password);
+
+                localStorage.setItem("userRole", role);
+
+                statusText.style.color = "green";
+                statusText.innerText = "Login successful!";
+                localStorage.setItem("userEmail", email);
+                localStorage.setItem("userRole", role);
+                localStorage.setItem("userName", document.getElementById("signupName").value);
+                setTimeout(() => {
+
+                    if (role === "student") {
+                        window.location.href = "student.html";
+                    }
+
+                    else if (role === "teacher") {
+                        window.location.href = "teacher.html";
+                    }
+
+                }, 1000);
+
+            } catch (error) {
+
+                statusText.style.color = "red";
+                statusText.innerText = error.message;
+            }
+
+        });
+
+    </script>
+
+</body>
+
+</html>

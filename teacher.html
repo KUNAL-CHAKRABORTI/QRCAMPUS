@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teacher Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Inter", "Segoe UI", sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(124, 58, 237, 0.18), transparent 35%),
+                linear-gradient(135deg, #faf7ff, #eef4ff);
+            color: #172033;
+        }
+
+        .layout {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 265px;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #2e1065, #7c3aed);
+            color: white;
+            padding: 26px 18px;
+            position: fixed;
+            box-shadow: 12px 0 35px rgba(46, 16, 101, 0.25);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .sidebar button {
+            width: 100%;
+            padding: 15px 16px;
+            margin: 11px 0;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.3s;
+        }
+
+        .sidebar button:hover {
+            background: white;
+            color: #7c3aed;
+            transform: translateX(8px);
+        }
+
+        .content {
+            margin-left: 265px;
+            width: calc(100% - 265px);
+        }
+
+        .topbar {
+            height: 78px;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(18px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 34px;
+            box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .topbar h3 {
+            font-size: 21px;
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .dark-btn {
+            border: none;
+            background: linear-gradient(135deg, #f3e8ff, #e0e7ff);
+            color: #7c3aed;
+            padding: 11px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 18px;
+            box-shadow: 0 8px 22px rgba(124, 58, 237, 0.16);
+        }
+
+        .profile {
+            width: 47px;
+            height: 47px;
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 12px 28px rgba(124, 58, 237, 0.35);
+        }
+
+        .dropdown {
+            position: absolute;
+            top: 82px;
+            right: 32px;
+            width: 245px;
+            background: white;
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: 0 24px 55px rgba(15, 23, 42, 0.2);
+            display: none;
+            border: 1px solid #ede9fe;
+        }
+
+        .dropdown p {
+            font-size: 14px;
+            margin-bottom: 9px;
+            color: #475569;
+        }
+
+        .dropdown button {
+            width: 100%;
+            margin-top: 12px;
+            border: none;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 11px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .main {
+            padding: 38px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 243, 255, 0.96));
+            border-radius: 34px;
+            padding: 34px;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            box-shadow: 0 28px 70px rgba(76, 29, 149, 0.14);
+            margin-bottom: 32px;
+            border: 1px solid #ede9fe;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            width: 270px;
+            height: 270px;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            border-radius: 50%;
+            top: -120px;
+            right: -100px;
+            opacity: 0.25;
+        }
+
+        .hero h1 {
+            position: relative;
+            font-size: 38px;
+            color: #0f172a;
+            margin-bottom: 14px;
+            font-weight: 950;
+        }
+
+        .hero p {
+            position: relative;
+            color: #64748b;
+            line-height: 1.8;
+            font-size: 16px;
+            max-width: 650px;
+        }
+
+        .stats {
+            position: relative;
+            display: flex;
+            gap: 18px;
+            margin-top: 28px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 18px 22px;
+            border-radius: 22px;
+            min-width: 165px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+            border: 1px solid #ede9fe;
+        }
+
+        .stat h2 {
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            -webkit-background-clip: text;
+            color: transparent;
+            font-size: 31px;
+            font-weight: 950;
+        }
+
+        .stat span {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .qr-card {
+            position: relative;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 28px;
+            padding: 26px;
+            box-shadow: 0 22px 50px rgba(15, 23, 42, 0.12);
+            border: 1px solid #ddd6fe;
+        }
+
+        .qr-card h2 {
+            font-size: 25px;
+            color: #0f172a;
+            font-weight: 950;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #334155;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid #ddd6fe;
+            outline: none;
+            font-size: 15px;
+            background: #fafafa;
+            transition: 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            background: white;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
+        }
+
+        .generate {
+            width: 100%;
+            border: none;
+            padding: 15px;
+            border-radius: 17px;
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            color: white;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            margin-top: 8px;
+            box-shadow: 0 15px 35px rgba(124, 58, 237, 0.28);
+            transition: 0.3s;
+        }
+
+        .generate:hover {
+            transform: translateY(-2px);
+        }
+
+        #qrcode {
+            margin-top: 22px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #qrcode canvas {
+            border-radius: 20px;
+            padding: 12px;
+            background: white;
+            box-shadow: 0 15px 35px rgba(15, 23, 42, 0.13);
+        }
+
+        #qrTimer {
+            margin-top: 16px;
+            padding: 13px;
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            color: white;
+            border-radius: 16px;
+            text-align: center;
+            font-weight: 900;
+            display: none;
+        }
+
+        .lecture-section {
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 30px;
+            padding: 28px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.09);
+            border: 1px solid #ede9fe;
+        }
+
+        .lecture-section h2 {
+            margin-bottom: 20px;
+            font-size: 26px;
+            color: #0f172a;
+            font-weight: 950;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 18px;
+        }
+
+        th,
+        td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        th {
+            background: linear-gradient(135deg, #f5f3ff, #dbeafe);
+            color: #4c1d95;
+            font-weight: 900;
+        }
+
+        tr:hover td {
+            background: #faf7ff;
+        }
+
+        .active {
+            color: #16a34a;
+            font-weight: 900;
+        }
+
+        body.dark {
+            background:
+                radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 35%),
+                linear-gradient(135deg, #020617, #0f172a);
+            color: white;
+        }
+
+        body.dark .topbar,
+        body.dark .qr-card,
+        body.dark .lecture-section,
+        body.dark .stat,
+        body.dark .dropdown {
+            background: rgba(30, 41, 59, 0.94);
+            color: white;
+            border-color: rgba(148, 163, 184, 0.18);
+        }
+
+        body.dark .hero {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.96));
+            border-color: rgba(148, 163, 184, 0.18);
+        }
+
+        body.dark .topbar h3,
+        body.dark .hero h1,
+        body.dark .qr-card h2,
+        body.dark .lecture-section h2,
+        body.dark label {
+            color: white;
+        }
+
+        body.dark p,
+        body.dark .dropdown p,
+        body.dark .stat span {
+            color: #cbd5e1;
+        }
+
+        body.dark input,
+        body.dark select {
+            background: #334155;
+            color: white;
+            border-color: #475569;
+        }
+
+        body.dark th {
+            background: #334155;
+            color: white;
+        }
+
+        body.dark td {
+            border-color: #334155;
+        }
+
+        body.dark tr:hover td {
+            background: #263449;
+        }
+
+        @media (max-width: 950px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+            }
+
+            .layout {
+                flex-direction: column;
+            }
+
+            .content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .main {
+                padding: 22px;
+            }
+        }
+
+        .qr-actions {
+            margin-top: 18px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .qr-actions button {
+            border: none;
+            padding: 12px 16px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(124, 58, 237, 0.22);
+        }
+
+        .qr-actions button:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <aside class="sidebar">
+            <div class="logo">👨‍🏫 Teacher Panel</div>
+            <button onclick="goToGenerateQR()">🔳 Generate QR</button>
+            <button onclick="goToLectures()">📚 Lecture History</button>
+            <button onclick="logout()">🚪 Logout</button>
+        </aside>
+
+        <main class="content">
+
+            <div class="topbar">
+                <h3>QR Attendance System</h3>
+
+                <div class="top-actions">
+                    <button class="dark-btn" onclick="toggleDark()">🌙</button>
+                    <div class="profile" id="profileInitial" onclick="toggleMenu()">T</div>
+                </div>
+
+                <div class="dropdown" id="menu">
+                    <p><b>Name:</b> <span id="teacherName"></span></p>
+                    <p><b>Email:</b> <span id="teacherEmail"></span></p>
+                    <p><b>Role:</b> Teacher</p>
+                    <button onclick="logout()">Logout</button>
+                </div>
+            </div>
+
+            <section class="main">
+
+                <div class="hero">
+
+                    <div>
+                        <h1>Generate Smart QR 👋</h1>
+                        <p>
+                            Create secure QR codes for attendance. Students can scan the QR from their dashboard.
+                            This QR includes subject, duration, expiry time, and teacher location.
+                        </p>
+
+                        <div class="stats">
+                            <div class="stat">
+                                <h2 id="totalLectures">0</h2>
+                                <span>Total QR Generated</span>
+                            </div>
+
+                            <div class="stat">
+                                <h2>2m</h2>
+                                <span>Default QR Expiry</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="qr-card" id="generateBox">
+                        <h2>Create QR</h2>
+
+                        <div class="input-group">
+                            <label>Subject Name</label>
+                            <input id="subject" type="text" placeholder="Example: Computer Networks">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Class / Duration</label>
+                            <input id="duration" type="text" placeholder="Example: CSE 3rd Year / 45 mins">
+                        </div>
+
+                        <div class="input-group">
+                            <label>QR Expiry</label>
+                            <select id="expiryMinutes">
+                                <option value="1">1 Minute</option>
+                                <option value="2" selected>2 Minutes</option>
+                                <option value="5">5 Minutes</option>
+                                <option value="10">10 Minutes</option>
+                            </select>
+                        </div>
+
+                        <button id="generateQRBtn" class="generate">Generate QR</button>
+
+                        <div id="qrcode"></div>
+                        <div id="qrTimer"></div>
+                        <div class="qr-actions">
+                            <button onclick="downloadQR()">⬇ Download QR</button>
+                            <button onclick="copyQRData()">📋 Copy QR Data</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lecture-section" id="lectureBox">
+                    <h2>Lecture / QR History</h2>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Class / Duration</th>
+                                <th>Generated At</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lectureTable"></tbody>
+                    </table>
+                </div>
+
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script>
+        const user = {
+            name: "Teacher",
+            email: localStorage.getItem("userEmail") || "teacher@gmail.com",
+            role: localStorage.getItem("userRole")
+        };
+
+        if (user.role !== "teacher") {
+            window.location.href = "index.html";
+        }
+
+        document.getElementById("teacherName").innerText = user.name || "Teacher";
+        document.getElementById("teacherEmail").innerText = user.email || "teacher@gmail.com";
+        document.getElementById("profileInitial").innerText =
+            (user.name || user.email || "T").charAt(0).toUpperCase();
+
+        let qrTimeout = null;
+        let currentQRData = null;
+        document.getElementById("generateQRBtn").addEventListener("click", generateQR);
+
+        async function generateQR() {
+            const subject = document.getElementById("subject").value.trim();
+            const duration = document.getElementById("duration").value.trim();
+            const expiryMinutes = Number(document.getElementById("expiryMinutes").value);
+
+            if (!subject || !duration) {
+                alert("Please fill all fields ❌");
+                return;
+            }
+
+            try {
+                const position = await getLocation();
+
+                const expiryTime = Date.now() + expiryMinutes * 60 * 1000;
+
+                const qrData = {
+                    subject: subject,
+                    duration: duration,
+                    teacherLat: position.coords.latitude,
+                    teacherLon: position.coords.longitude,
+                    expiry: expiryTime
+                };
+                currentQRData = qrData;
+
+                const lecture = {
+                    subject,
+                    duration,
+                    teacherName: user.name,
+                    teacherEmail: user.email,
+                    time: new Date().toLocaleString(),
+                    expiry: expiryTime
+                };
+
+                saveLecture(lecture);
+
+                const qrBox = document.getElementById("qrcode");
+                qrBox.innerHTML = "";
+
+                QRCode.toCanvas(JSON.stringify(qrData), {
+                    width: 230,
+                    margin: 2
+                }, function (err, canvas) {
+                    if (err) {
+                        alert("QR generation failed ❌");
+                        return;
+                    }
+                    qrBox.appendChild(canvas);
+                });
+
+                startExpiryTimer(expiryTime);
+                loadLectures();
+            } catch (error) {
+                alert("Location permission required to generate QR ❌");
+            }
+        }
+
+        function getLocation() {
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
+        }
+
+        function downloadQR() {
+            const canvas = document.querySelector("#qrcode canvas");
+
+            if (!canvas) {
+                alert("Please generate QR first ❌");
+                return;
+            }
+
+            const link = document.createElement("a");
+            link.download = "attendance-qr.png";
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        }
+
+        function copyQRData() {
+            if (!currentQRData) {
+                alert("Please generate QR first ❌");
+                return;
+            }
+
+            navigator.clipboard.writeText(JSON.stringify(currentQRData));
+            alert("QR data copied successfully ✅");
+        }
+
+        function startExpiryTimer(expiryTime) {
+            clearInterval(qrTimeout);
+
+            const timerEl = document.getElementById("qrTimer");
+            const qrBox = document.getElementById("qrcode");
+
+            timerEl.style.display = "block";
+
+            qrTimeout = setInterval(() => {
+                const remaining = expiryTime - Date.now();
+
+                if (remaining <= 0) {
+                    timerEl.innerText = "QR Expired ❌";
+                    qrBox.innerHTML = "";
+                    clearInterval(qrTimeout);
+                    return;
+                }
+
+                const seconds = Math.floor(remaining / 1000);
+                timerEl.innerText = `Expires in ${seconds}s`;
+            }, 1000);
+        }
+
+        async function saveLecture(record) {
+
+            const lectureRef = ref(db, "lectureRecords");
+
+            const newLecture = push(lectureRef);
+
+            await set(newLecture, record);
+        }
+
+        function loadLectures() {
+            const lectures = JSON.parse(localStorage.getItem("lectureRecords")) || [];
+            const teacherLectures = lectures.filter(item => item.teacherEmail === user.email);
+
+            document.getElementById("totalLectures").innerText = teacherLectures.length;
+
+            const table = document.getElementById("lectureTable");
+
+            if (teacherLectures.length === 0) {
+                table.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align:center;">No QR generated yet</td>
+        </tr>
+      `;
+                return;
+            }
+
+            table.innerHTML = teacherLectures.reverse().map(item => {
+                const status = Date.now() > item.expiry ? "Expired" : "Active";
+
+                return `
+        <tr>
+          <td>${item.subject}</td>
+          <td>${item.duration}</td>
+          <td>${item.time}</td>
+          <td class="${status === "Active" ? "active" : ""}">${status}</td>
+        </tr>
+      `;
+            }).join("");
+        }
+
+        function goToGenerateQR() {
+            document.getElementById("generateBox").scrollIntoView({ behavior: "smooth" });
+        }
+
+        function goToLectures() {
+            document.getElementById("lectureBox").scrollIntoView({ behavior: "smooth" });
+        }
+
+        function toggleDark() {
+            document.body.classList.toggle("dark");
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById("menu");
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
+
+        function logout() {
+            window.location.href = "index.html";
+        }
+
+        loadLectures();
+    </script>
+
+</body>
+
+</html>
