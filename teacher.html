@@ -583,7 +583,31 @@
 
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+
+        import {
+            getDatabase,
+            ref,
+            push,
+            set,
+            get
+        } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh6L6YkSb4M10nw51g1yo7XE_4corC6tQ",
+            authDomain: "qrcampus-614c2.firebaseapp.com",
+            databaseURL: "https://qrcampus-614c2-default-rtdb.firebaseio.com/",
+            projectId: "qrcampus-614c2",
+            storageBucket: "qrcampus-614c2.firebasestorage.app",
+            messagingSenderId: "776699116949",
+            appId: "1:776699116949:web:0475c465df0d830fbb4a9c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+
+        const db = getDatabase(app);
+
         const user = {
             name: "Teacher",
             email: localStorage.getItem("userEmail") || "teacher@gmail.com",
@@ -721,34 +745,51 @@
             await set(newLecture, record);
         }
 
-        function loadLectures() {
-            const lectures = JSON.parse(localStorage.getItem("lectureRecords")) || [];
-            const teacherLectures = lectures.filter(item => item.teacherEmail === user.email);
+        async function loadLectures() {
 
-            document.getElementById("totalLectures").innerText = teacherLectures.length;
+            const snapshot = await get(ref(db, "lectureRecords"));
 
             const table = document.getElementById("lectureTable");
 
-            if (teacherLectures.length === 0) {
+            if (!snapshot.exists()) {
+
                 table.innerHTML = `
         <tr>
-          <td colspan="4" style="text-align:center;">No QR generated yet</td>
+            <td colspan="4" style="text-align:center;">
+                No QR generated yet
+            </td>
         </tr>
-      `;
+        `;
+
                 return;
             }
 
+            const lectureData = snapshot.val();
+
+            const lectures = Object.values(lectureData);
+
+            const teacherLectures = lectures.filter(
+                item => item.teacherEmail === user.email
+            );
+
+            document.getElementById("totalLectures").innerText =
+                teacherLectures.length;
+
             table.innerHTML = teacherLectures.reverse().map(item => {
-                const status = Date.now() > item.expiry ? "Expired" : "Active";
+
+                const status =
+                    Date.now() > item.expiry ? "Expired" : "Active";
 
                 return `
         <tr>
-          <td>${item.subject}</td>
-          <td>${item.duration}</td>
-          <td>${item.time}</td>
-          <td class="${status === "Active" ? "active" : ""}">${status}</td>
+            <td>${item.subject}</td>
+            <td>${item.duration}</td>
+            <td>${item.time}</td>
+            <td class="${status === "Active" ? "active" : ""}">
+                ${status}
+            </td>
         </tr>
-      `;
+        `;
             }).join("");
         }
 

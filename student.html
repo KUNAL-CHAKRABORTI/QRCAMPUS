@@ -491,6 +491,30 @@
 
     <script type="module">
 
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+
+        import {
+            getDatabase,
+            ref,
+            push,
+            set,
+            get
+        } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh6L6YkSb4M10nw51g1yo7XE_4corC6tQ",
+            authDomain: "qrcampus-614c2.firebaseapp.com",
+            databaseURL: "https://qrcampus-614c2-default-rtdb.firebaseio.com/",
+            projectId: "qrcampus-614c2",
+            storageBucket: "qrcampus-614c2.firebasestorage.app",
+            messagingSenderId: "776699116949",
+            appId: "1:776699116949:web:0475c465df0d830fbb4a9c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+
+        const db = getDatabase(app);
+
         const user = {
             name: localStorage.getItem("userName") || "Student",
             email: localStorage.getItem("userEmail") || "student@gmail.com",
@@ -598,7 +622,8 @@
                     distance: distanceText
                 };
 
-                saveAttendance(attendance);
+                await saveAttendance(attendance);
+                await loadAttendance();
 
                 document.getElementById("status").innerText = "✅ Attendance Marked Successfully";
 
@@ -658,30 +683,56 @@
             await set(newAttendance, record);
         }
 
-        function loadAttendance() {
-            const attendance = JSON.parse(localStorage.getItem("attendanceRecords")) || [];
-            const studentRecords = attendance.filter(item => item.email === user.email);
+        async function loadAttendance() {
 
-            document.getElementById("totalAttendance").innerText = studentRecords.length;
+            const snapshot = await get(ref(db, "attendanceRecords"));
 
             const table = document.getElementById("attendanceTable");
 
-            if (studentRecords.length === 0) {
+            if (!snapshot.exists()) {
+
                 table.innerHTML = `
         <tr>
-          <td colspan="4" style="text-align:center;">No attendance marked yet</td>
+            <td colspan="4" style="text-align:center;">
+                No attendance marked yet
+            </td>
         </tr>
-      `;
+        `;
+
+                return;
+            }
+
+            const attendanceData = snapshot.val();
+
+            const attendance = Object.values(attendanceData);
+
+            const studentRecords = attendance.filter(
+                item => item.email === user.email
+            );
+
+            document.getElementById("totalAttendance").innerText =
+                studentRecords.length;
+
+            if (studentRecords.length === 0) {
+
+                table.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align:center;">
+                No attendance marked yet
+            </td>
+        </tr>
+        `;
+
                 return;
             }
 
             table.innerHTML = studentRecords.reverse().map(item => `
-      <tr>
-        <td>${item.subject}</td>
-        <td>${item.time}</td>
-        <td class="present">${item.status}</td>
-        <td>${item.distance}</td>
-      </tr>
+        <tr>
+            <td>${item.subject}</td>
+            <td>${item.time}</td>
+            <td class="present">${item.status}</td>
+            <td>${item.distance}</td>
+        </tr>
     `).join("");
         }
 
