@@ -570,6 +570,7 @@
                                 <th>Class / Duration</th>
                                 <th>Generated At</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="lectureTable"></tbody>
@@ -593,6 +594,7 @@
             set,
             get
         } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCh6L6YkSb4M10nw51g1yo7XE_4corC6tQ",
@@ -608,20 +610,39 @@
 
         const db = getDatabase(app);
 
-        const user = {
-            name: "Teacher",
-            email: localStorage.getItem("userEmail") || "teacher@gmail.com",
-            role: localStorage.getItem("userRole")
-        };
+        // Initialize Auth and protect this page. If not signed in, redirect to index.html
+        const auth = getAuth(app);
+        let currentUser = null; // will hold authenticated user + profile
 
-        if (user.role !== "teacher") {
-            window.location.href = "index.html";
-        }
+        onAuthStateChanged(auth, async (u) => {
+            if (!u) {
+                window.location.href = "index.html";
+                return;
+            }
 
-        document.getElementById("teacherName").innerText = user.name || "Teacher";
-        document.getElementById("teacherEmail").innerText = user.email || "teacher@gmail.com";
-        document.getElementById("profileInitial").innerText =
-            (user.name || user.email || "T").charAt(0).toUpperCase();
+            currentUser = { uid: u.uid };
+
+            // Load profile from database
+            const snap = await get(ref(db, `users/${u.uid}`));
+            if (!snap.exists() || snap.val().role !== 'teacher') {
+                // Not a teacher -> redirect
+                window.location.href = "index.html";
+                return;
+            }
+
+            const profile = snap.val();
+            currentUser.name = profile.name;
+            currentUser.email = profile.email;
+            currentUser.role = profile.role;
+
+            // Update UI with profile info
+            document.getElementById("teacherName").innerText = currentUser.name || "Teacher";
+            document.getElementById("teacherEmail").innerText = currentUser.email || "teacher@gmail.com";
+            document.getElementById("profileInitial").innerText = (currentUser.name || currentUser.email || "T").charAt(0).toUpperCase();
+
+            // Load lectures after auth and profile are ready
+            loadLectures();
+        });
 
         let qrTimeout = null;
         let currentQRData = null;
@@ -640,9 +661,17 @@
             try {
                 const position = await getLocation();
 
+
                 const expiryTime = Date.now() + expiryMinutes * 60 * 1000;
 
+                // Create a new lecture entry to obtain a unique lectureId
+                const lecturesRef = ref(db, "lectures");
+                const newLectureRef = push(lecturesRef);
+                const lectureId = newLectureRef.key;
+
                 const qrData = {
+                    lectureId: lectureId,
+                    teacherId: currentUser.uid,
                     subject: subject,
                     duration: duration,
                     teacherLat: position.coords.latitude,
@@ -654,13 +683,15 @@
                 const lecture = {
                     subject,
                     duration,
-                    teacherName: user.name,
-                    teacherEmail: user.email,
+                    teacherId: currentUser.uid,
+                    teacherName: currentUser.name,
+                    teacherEmail: currentUser.email,
                     time: new Date().toLocaleString(),
                     expiry: expiryTime
                 };
 
-                saveLecture(lecture);
+                // Save lecture under lectures/{lectureId}
+                await set(newLectureRef, lecture);
 
                 const qrBox = document.getElementById("qrcode");
                 qrBox.innerHTML = "";
@@ -736,23 +767,14 @@
             }, 1000);
         }
 
-        async function saveLecture(record) {
-
-            const lectureRef = ref(db, "lectureRecords");
-
-            const newLecture = push(lectureRef);
-
-            await set(newLecture, record);
-        }
+        // (old helper removed) lectures are created inline when generating QR
 
         async function loadLectures() {
-
-            const snapshot = await get(ref(db, "lectureRecords"));
-
+            // Load all lectures from `lectures` and filter by current teacher
+            const snapshot = await get(ref(db, "lectures"));
             const table = document.getElementById("lectureTable");
 
             if (!snapshot.exists()) {
-
                 table.innerHTML = `
         <tr>
             <td colspan="4" style="text-align:center;">
@@ -760,25 +782,23 @@
             </td>
         </tr>
         `;
-
+                document.getElementById("totalLectures").innerText = 0;
                 return;
             }
 
             const lectureData = snapshot.val();
 
-            const lectures = Object.values(lectureData);
+            // lectureData is { lectureId: { ... } }
+            const entries = Object.entries(lectureData);
 
-            const teacherLectures = lectures.filter(
-                item => item.teacherEmail === user.email
-            );
+            // Keep only lectures for this teacher
+            const teacherEntries = entries.filter(([id, item]) => item.teacherId === currentUser.uid);
 
-            document.getElementById("totalLectures").innerText =
-                teacherLectures.length;
+            document.getElementById("totalLectures").innerText = teacherEntries.length;
 
-            table.innerHTML = teacherLectures.reverse().map(item => {
-
-                const status =
-                    Date.now() > item.expiry ? "Expired" : "Active";
+            // Build table rows with a "View Students Present" button
+            table.innerHTML = teacherEntries.reverse().map(([id, item]) => {
+                const status = Date.now() > item.expiry ? "Expired" : "Active";
 
                 return `
         <tr>
@@ -788,9 +808,58 @@
             <td class="${status === "Active" ? "active" : ""}">
                 ${status}
             </td>
+            <td>
+                <button onclick="viewStudents('${id}')">View Students Present</button>
+            </td>
         </tr>
         `;
             }).join("");
+        }
+
+        // Show students present for a lectureId by reading attendance/{lectureId}
+        async function viewStudents(lectureId) {
+            const snap = await get(ref(db, `attendance/${lectureId}`));
+            const overlay = document.createElement('div');
+            overlay.style = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:9999;';
+            const box = document.createElement('div');
+            box.style = 'background:white;padding:20px;border-radius:12px;max-width:800px;width:90%;max-height:80%;overflow:auto;';
+            const closeBtn = document.createElement('button');
+            closeBtn.innerText = 'Close';
+            closeBtn.style = 'float:right;background:#ef4444;color:white;padding:8px 12px;border:none;border-radius:8px;cursor:pointer;';
+            closeBtn.onclick = () => document.body.removeChild(overlay);
+
+            const title = document.createElement('h3');
+            title.innerText = 'Students Present';
+            box.appendChild(closeBtn);
+            box.appendChild(title);
+
+            if (!snap.exists()) {
+                const p = document.createElement('p');
+                p.innerText = 'No students marked present yet.';
+                box.appendChild(p);
+                overlay.appendChild(box);
+                document.body.appendChild(overlay);
+                return;
+            }
+
+            const data = snap.val();
+            const rows = [];
+            for (const [studentId, rec] of Object.entries(data)) {
+                rows.push(`<tr><td>${rec.studentName}</td><td>${rec.studentEmail}</td><td>${rec.time}</td><td>${rec.distance || ''}</td></tr>`);
+            }
+
+            const tableHtml = `
+                <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+                    <thead><tr><th>Name</th><th>Email</th><th>Time</th><th>Distance</th></tr></thead>
+                    <tbody>${rows.join('')}</tbody>
+                </table>
+            `;
+
+            const container = document.createElement('div');
+            container.innerHTML = tableHtml;
+            box.appendChild(container);
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
         }
 
         function goToGenerateQR() {
@@ -811,10 +880,23 @@
         }
 
         function logout() {
-            window.location.href = "index.html";
+            // Sign out via Firebase Auth then redirect
+            signOut(auth).then(() => {
+                window.location.href = "index.html";
+            }).catch(() => {
+                window.location.href = "index.html";
+            });
         }
 
-        loadLectures();
+        // Expose some functions to global scope for inline onclick handlers in the HTML
+        window.goToGenerateQR = goToGenerateQR;
+        window.goToLectures = goToLectures;
+        window.logout = logout;
+        window.toggleDark = toggleDark;
+        window.toggleMenu = toggleMenu;
+        window.viewStudents = viewStudents;
+        window.downloadQR = downloadQR;
+        window.copyQRData = copyQRData;
     </script>
 
 </body>

@@ -639,9 +639,17 @@
 
             try {
 
-                await createUserWithEmailAndPassword(auth, email, password);
+                // Create user with Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-                localStorage.setItem("userRole", role);
+                // Save profile to Realtime Database under users/{uid}
+                const uid = userCredential.user.uid;
+                const name = document.getElementById("signupName").value;
+                await set(ref(db, `users/${uid}`), {
+                    name: name,
+                    email: email,
+                    role: role
+                });
 
                 statusText.style.color = "green";
                 statusText.innerText = "Account created successfully!";
@@ -672,25 +680,32 @@
 
             try {
 
-                await signInWithEmailAndPassword(auth, email, password);
+                // Sign in with Firebase Auth
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-                localStorage.setItem("userRole", role);
+                const uid = userCredential.user.uid;
+
+                // Fetch the stored role from Realtime Database
+                const snap = await get(ref(db, `users/${uid}`));
+
+                if (!snap.exists()) {
+                    throw new Error("User profile not found. Please signup first.");
+                }
+
+                const profile = snap.val();
 
                 statusText.style.color = "green";
                 statusText.innerText = "Login successful!";
-                localStorage.setItem("userEmail", email);
-                localStorage.setItem("userRole", role);
-                localStorage.setItem("userName", document.getElementById("signupName").value);
+
+                // Redirect based on stored role in database
                 setTimeout(() => {
-
-                    if (role === "student") {
+                    if (profile.role === "student") {
                         window.location.href = "student.html";
-                    }
-
-                    else if (role === "teacher") {
+                    } else if (profile.role === "teacher") {
                         window.location.href = "teacher.html";
+                    } else {
+                        window.location.href = "index.html";
                     }
-
                 }, 1000);
 
             } catch (error) {

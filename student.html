@@ -455,6 +455,14 @@
                                 <h2>QR</h2>
                                 <span>Smart Scanner</span>
                             </div>
+                            <div class="stat">
+                                <h2 id="totalClasses">0</h2>
+                                <span>Total Classes</span>
+                            </div>
+                            <div class="stat">
+                                <h2 id="attendancePercent">0%</h2>
+                                <span>Attendance %</span>
+                            </div>
                         </div>
                     </div>
 
@@ -500,6 +508,7 @@
             set,
             get
         } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCh6L6YkSb4M10nw51g1yo7XE_4corC6tQ",
@@ -515,21 +524,35 @@
 
         const db = getDatabase(app);
 
-        const user = {
-            name: localStorage.getItem("userName") || "Student",
-            email: localStorage.getItem("userEmail") || "student@gmail.com",
-            role: localStorage.getItem("userRole")
-        };
+        // Initialize Auth, protect page, and load profile from Realtime Database
+        const auth = getAuth(app);
+        let currentUser = null; // { uid, name, email, role }
 
-        if (user.role !== "student") {
-            window.location.href = "index.html";
-        }
+        onAuthStateChanged(auth, async (u) => {
+            if (!u) {
+                window.location.href = "index.html";
+                return;
+            }
 
-        document.getElementById("studentName").innerText = user.name || "Student";
-        document.getElementById("profileName").innerText = user.name || "Student";
-        document.getElementById("profileEmail").innerText = user.email || "student@gmail.com";
-        document.getElementById("profileInitial").innerText =
-            (user.name || user.email || "S").charAt(0).toUpperCase();
+            // Load profile from database
+            const snap = await get(ref(db, `users/${u.uid}`));
+            if (!snap.exists() || snap.val().role !== 'student') {
+                window.location.href = "index.html";
+                return;
+            }
+
+            const profile = snap.val();
+            currentUser = { uid: u.uid, name: profile.name, email: profile.email, role: profile.role };
+
+            document.getElementById("studentName").innerText = currentUser.name || "Student";
+            document.getElementById("profileName").innerText = currentUser.name || "Student";
+            document.getElementById("profileEmail").innerText = currentUser.email || "student@gmail.com";
+            document.getElementById("profileInitial").innerText = (currentUser.name || currentUser.email || "S").charAt(0).toUpperCase();
+
+            // Load attendance history after auth/profile ready
+            await loadAttendance();
+            startScanner();
+        });
 
         let html5QrCode;
         let scanning = false;
@@ -613,16 +636,35 @@
                     }
                 }
 
+                // Ensure QR contains lectureId
+                if (!data.lectureId) {
+                    document.getElementById("status").innerText = "❌ Invalid QR (missing lectureId)";
+                    restartScanner();
+                    return;
+                }
+
+                const lectureId = data.lectureId;
+
+                // Check if attendance already exists for this student
+                const attendanceSnap = await get(ref(db, `attendance/${lectureId}/${currentUser.uid}`));
+                if (attendanceSnap.exists()) {
+                    document.getElementById("status").innerText = "Already marked";
+                    restartScanner();
+                    return;
+                }
+
                 const attendance = {
-                    name: user.name,
-                    email: user.email,
+                    studentName: currentUser.name,
+                    studentEmail: currentUser.email,
                     subject: data.subject || "Unknown Subject",
                     time: new Date().toLocaleString(),
                     status: "Present",
                     distance: distanceText
                 };
 
-                await saveAttendance(attendance);
+                // Save attendance under attendance/{lectureId}/{studentId}
+                await set(ref(db, `attendance/${lectureId}/${currentUser.uid}`), attendance);
+
                 await loadAttendance();
 
                 document.getElementById("status").innerText = "✅ Attendance Marked Successfully";
@@ -631,13 +673,11 @@
                 result.style.display = "block";
                 result.innerHTML = `
         <h3>${attendance.subject}</h3>
-        <p><b>Name:</b> ${attendance.name}</p>
+        <p><b>Name:</b> ${attendance.studentName}</p>
         <p><b>Time:</b> ${attendance.time}</p>
         <p><b>Distance:</b> ${attendance.distance}</p>
         <p class="present">✔ Present</p>
       `;
-
-                loadAttendance();
 
             } catch (error) {
                 document.getElementById("status").innerText = "❌ Invalid QR Code";
@@ -674,47 +714,38 @@
             return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
         }
 
-        async function saveAttendance(record) {
-
-            const attendanceRef = ref(db, "attendanceRecords");
-
-            const newAttendance = push(attendanceRef);
-
-            await set(newAttendance, record);
-        }
+        // Attendance is saved under attendance/{lectureId}/{studentId} (see onScanSuccess)
 
         async function loadAttendance() {
+            // Gather total number of lectures
+            const lecturesSnap = await get(ref(db, 'lectures'));
+            const totalClasses = lecturesSnap.exists() ? Object.keys(lecturesSnap.val()).length : 0;
 
-            const snapshot = await get(ref(db, "attendanceRecords"));
+            // Gather attendance across all lectures and build student-specific list
+            const snap = await get(ref(db, 'attendance'));
+            const table = document.getElementById('attendanceTable');
 
-            const table = document.getElementById("attendanceTable");
-
-            if (!snapshot.exists()) {
-
-                table.innerHTML = `
-        <tr>
-            <td colspan="4" style="text-align:center;">
-                No attendance marked yet
-            </td>
-        </tr>
-        `;
-
-                return;
+            const studentRecords = [];
+            if (snap.exists()) {
+                const all = snap.val(); // { lectureId: { studentId: record } }
+                for (const [lectureId, students] of Object.entries(all)) {
+                    for (const [studentId, rec] of Object.entries(students)) {
+                        if (studentId === currentUser.uid) {
+                            studentRecords.push({ subject: rec.subject, time: rec.time, status: rec.status, distance: rec.distance });
+                        }
+                    }
+                }
             }
 
-            const attendanceData = snapshot.val();
+            // Update stats
+            const presentClasses = studentRecords.length;
+            const percent = totalClasses > 0 ? Math.round((presentClasses / totalClasses) * 100) : 0;
 
-            const attendance = Object.values(attendanceData);
-
-            const studentRecords = attendance.filter(
-                item => item.email === user.email
-            );
-
-            document.getElementById("totalAttendance").innerText =
-                studentRecords.length;
+            document.getElementById('totalAttendance').innerText = presentClasses;
+            document.getElementById('totalClasses').innerText = totalClasses;
+            document.getElementById('attendancePercent').innerText = percent + '%';
 
             if (studentRecords.length === 0) {
-
                 table.innerHTML = `
         <tr>
             <td colspan="4" style="text-align:center;">
@@ -722,7 +753,6 @@
             </td>
         </tr>
         `;
-
                 return;
             }
 
@@ -733,7 +763,7 @@
             <td class="present">${item.status}</td>
             <td>${item.distance}</td>
         </tr>
-    `).join("");
+    `).join('');
         }
 
         function showScanner() {
@@ -755,11 +785,19 @@
         }
 
         function logout() {
-            window.location.href = "index.html";
+            signOut(auth).then(() => {
+                window.location.href = 'index.html';
+            }).catch(() => {
+                window.location.href = 'index.html';
+            });
         }
 
-        loadAttendance();
-        startScanner();
+        // Expose functions used by inline onclick handlers
+        window.showScanner = showScanner;
+        window.showAttendance = showAttendance;
+        window.logout = logout;
+        window.toggleDark = toggleDark;
+        window.toggleProfile = toggleProfile;
     </script>
 
 </body>
