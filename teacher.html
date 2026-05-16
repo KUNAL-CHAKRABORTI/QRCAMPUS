@@ -470,6 +470,58 @@
         .qr-actions button:hover {
             transform: translateY(-2px);
         }
+
+        .view-btn {
+            border: none;
+            padding: 10px 16px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            color: white;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.3s ease;
+            box-shadow: 0 10px 25px rgba(124, 58, 237, 0.22);
+        }
+
+        .view-btn:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 16px 35px rgba(124, 58, 237, 0.35);
+        }
+
+        .view-btn:active {
+            transform: scale(0.96);
+        }
+
+        .lecture-section {
+            overflow-x: auto;
+        }
+
+        .lecture-section table {
+            min-width: 760px;
+        }
+
+        .view-btn {
+            white-space: nowrap;
+            padding: 9px 13px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 700px) {
+            .lecture-section {
+                padding: 18px;
+            }
+
+            .lecture-section h2 {
+                font-size: 22px;
+            }
+
+            th,
+            td {
+                padding: 12px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 
@@ -809,7 +861,9 @@
                 ${status}
             </td>
             <td>
-                <button onclick="viewStudents('${id}')">View Students Present</button>
+                <button class="view-btn" onclick="viewStudents('${id}')">
+    👨‍🎓 View Students
+</button>
             </td>
         </tr>
         `;
